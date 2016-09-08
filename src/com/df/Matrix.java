@@ -27,7 +27,7 @@ public class Matrix {
         this.matrix = array;
     }
 
-    public double[][] cloneMartix() {
+    private double[][] cloneA() {
         double[][] a = new double[matrix.length][matrix[0].length];
         for(int i = 0; i < matrix.length; i ++) {
             for (int j = 0; j <matrix[i].length; j ++){
@@ -38,7 +38,7 @@ public class Matrix {
     }
 
     public double[] solve(double[] b) {
-        double[][] a = cloneMartix();
+        double[][] a = cloneA();
         for(int n = 0; n < a.length; n++) {
             int exchangeRowIndex = exchangeRow(a, n);
             if(n!=exchangeRowIndex) {
@@ -83,7 +83,7 @@ public class Matrix {
         }
     }
 
-    public void elimination(double[][] a, int n, double[][] b) {
+    public void elimination2(double[][] a, int n, double[][] b) {
         for(int row = n+1; row <a.length; row ++) {
             if(a[row][n] == 0) {
                 continue;
@@ -92,8 +92,10 @@ public class Matrix {
             for(int column = n; column <a[row].length; column ++) {
                 a[row][column] = a[row][column] - index*a[n][column];
             }
-            for(int i = 0; i<b[row].length; i++) {
-                b[row][i] = b[row][i] - b[n][i] * index;
+            if(b != null) {
+                for (int i = 0; i < b[row].length; i++) {
+                    b[row][i] = b[row][i] - b[n][i] * index;
+                }
             }
         }
     }
@@ -132,7 +134,7 @@ public class Matrix {
 
     public Matrix getInverse() {
         double[][] b = Matrix.getIdentity(this.matrix);
-        double[][] a = this.cloneMartix();
+        double[][] a = this.cloneA();
         for(int n = 0; n < a.length; n++) {
             int exchangeRowIndex = exchangeRow(a, n);
             if(n!=exchangeRowIndex) {
@@ -140,7 +142,7 @@ public class Matrix {
                 b[n] = b[exchangeRowIndex];
                 b[exchangeRowIndex] = tempValue;
             }
-            elimination(a, n, b);
+            elimination2(a, n, b);
         }
         for(int n = a.length-1; n >= 0; n --) {
             inverseElimination(a, n, b);
@@ -150,21 +152,35 @@ public class Matrix {
 
     public void inverseElimination(double[][] a, int n, double[][] b) {
         if(n != 0) {
+            double povit=0;
+            int povitColumn = 0;
+            for (int i = 0; i<a[n].length; i++) {
+                if(a[n][i] != 0) {
+                    povit = a[n][i];
+                    povitColumn = i;
+                    break;
+                }
+            }
+            if(povit == 0) {
+                return;
+            }
             for (int row = n - 1; row >= 0; row--) {
-                if (a[row][n] == 0) {
+                if (a[row][povitColumn] == 0) {
                     continue;
                 }
-                double index = a[row][n] / a[n][n];
-                for (int column = n; column >= 0; column--) {
+                double index = a[row][povitColumn] / povit;
+                for (int column = a[row].length-1; column >= 0; column--) {
                     a[row][column] = a[row][column] - index * a[n][column];
                 }
-                for (int i = 0; i < b[row].length; i++) {
-                    b[row][i] = b[row][i] - b[n][i] * index;
+                if(b != null) {
+                    for (int i = 0; i < b[row].length; i++) {
+                        b[row][i] = b[row][i] - b[n][i] * index;
+                    }
                 }
             }
         }
 
-        if(a[n][n] !=1) {
+        if(a[n][n] !=1 && b != null) {
             double index = a[n][n];
             a[n][n] = 1;
             for (int i = 0; i < b[n].length; i++) {
@@ -174,8 +190,8 @@ public class Matrix {
     }
 
     public Matrix multiply(Matrix matrix) {
-        double[][] a = this.cloneMartix();
-        double[][] b = matrix.cloneMartix();
+        double[][] a = this.cloneA();
+        double[][] b = matrix.cloneA();
         if(a[0].length != b.length) {
             return null;
         }
@@ -190,16 +206,26 @@ public class Matrix {
         }
         return new Matrix(c);
     }
-    
-    public Matrix trsanpose() {
-    	double[][] t = new double[this.matrix[0].length][this.matrix.length];
-    	
-    	for(int i = 0; i < matrix.length; i ++) {
-            for (int j = 0; j <matrix[i].length; j ++){
-            	t[i][j] = matrix[j][i];
+
+    public Matrix transpose() {
+        double [][] t = new double[matrix[0].length][matrix.length];
+        for(int row = 0; row< t.length; row++) {
+            for (int column = 0; column < t[row].length; column++) {
+                t[row][column] = matrix[column][row];
             }
         }
-    	
-    	return new Matrix(t);
+        return new Matrix(t);
+    }
+
+    public Matrix rref() {
+        double[][] r = this.cloneA();
+        for(int n = 0; n < r.length; n++) {
+            int exchangeRowIndex = exchangeRow(r, n);
+            elimination2(r, n, null);
+        }
+        for(int n = r.length-1; n >= 0; n --) {
+            inverseElimination(r, n, null);
+        }
+        return new Matrix(r);
     }
 }
